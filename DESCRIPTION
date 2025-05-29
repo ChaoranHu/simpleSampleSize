@@ -1,0 +1,25 @@
+Package: simpleSampleSize
+Title: R Package for Sample Size Calculation
+Version: 1.0.0.9000
+Date: 2025-05-12
+Authors@R: c(
+  person(
+    family = "Hu",
+    given = "Chaoran",
+    email = "huchaoran.stat@gmail.com",
+    role = c("aut", "cre")),
+  person(
+    family = "Eli Lilly and Company",
+    role = "cph"))
+Description: Easy and straight implementation of sample size calculation with R.
+    This package covers variable types including binary, continuous, count, etc.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+  R (>= 3.5.0)
+Imports:
+	dplyr,
+	lubridate,
+	parallel
+RoxygenNote: 7.3.2
