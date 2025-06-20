@@ -23,6 +23,8 @@ rqpois <- function(n, mu, theta) rnbinom(n=n, mu=mu, size=mu/(theta-1))
 ##' @param n_sim number of simulations
 ##' @param power power
 ##' @param n_core number of cores used for parallel computation
+##' @param glm_model specify which glm model used in simulation.
+##' It can be c("negativebinomial", "quasipoisson").
 ##'
 ##' @return see description part
 ##'
@@ -45,7 +47,8 @@ getPower_count_ovdisp <- function(total_sample_size, ss_ratio = 1,
                                   rate_AC, rate_PLB,
                                   over_disp_rate = 0.2, drop_rate = 0.1,
                                   conf.level = 0.95, n_sim = 10000,
-                                  n_core = 6) {
+                                  n_core = 6,
+                                  glm_model = "negativebinomial") {
     total_sample_size <- total_sample_size * (1-drop_rate)
     sample_size_AC <- total_sample_size*(ss_ratio/(ss_ratio+1))
     sample_size_PLB <- total_sample_size - sample_size_AC
@@ -78,9 +81,13 @@ getPower_count_ovdisp <- function(total_sample_size, ss_ratio = 1,
                                             colnames(dat) <- c("event", "arm")
                                             dat$event <- as.numeric(dat$event)
 
-                                            cart <- glm(event ~ arm, dat, family = quasipoisson)
-                                        # cart <- glm(event ~ arm, dat, family = poisson)
+                                            if (glm_model == "quasipoisson") {
+                                                cart <- glm(event ~ arm, dat, family = quasipoisson)
+                                            }
 
+                                            if (glm_model == "negativebinomial") {
+                                                cart <- MASS::glm.nb(event ~ arm, data = dat)
+                                            }
                                             coef(summary(cart))[2, 4]
                                         },
                                         mc.cores = n_core))
@@ -96,12 +103,13 @@ getPower_count_ovdisp <- function(total_sample_size, ss_ratio = 1,
 getSampleSize_count_ovdisp <- function(power, ss_ratio = 1,
                                        rate_AC, rate_PLB,
                                        over_disp_rate = 0.2, drop_rate = 0.1,
-                                       conf.level = 0.95, n_sim = 10000, n_core = 6){
+                                       conf.level = 0.95, n_sim = 10000, n_core = 6,
+                                       glm_model = "negativebinomial"){
 
     check <- getPower_count_ovdisp(5000, ss_ratio,
                               rate_AC, rate_PLB,
                               over_disp_rate, drop_rate,
-                              conf.level, n_sim, n_core) < power
+                              conf.level, n_sim, n_core, glm_model) < power
     if (check) {
         message("total sample size > 5000; return 9999 instead")
         return(9999)
@@ -111,7 +119,7 @@ getSampleSize_count_ovdisp <- function(power, ss_ratio = 1,
         getPower_count_ovdisp(total_sample_size, ss_ratio,
                               rate_AC, rate_PLB,
                               over_disp_rate, drop_rate,
-                              conf.level, n_sim, n_core) - power
+                              conf.level, n_sim, n_core, glm_model) - power
     }
     round(uniroot(f, c(10, 5000))$root)
 }

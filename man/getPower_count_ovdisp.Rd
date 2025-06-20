@@ -14,7 +14,8 @@ getPower_count_ovdisp(
   drop_rate = 0.1,
   conf.level = 0.95,
   n_sim = 10000,
-  n_core = 6
+  n_core = 6,
+  glm_model = "negativebinomial"
 )
 
 getSampleSize_count_ovdisp(
@@ -26,7 +27,8 @@ getSampleSize_count_ovdisp(
   drop_rate = 0.1,
   conf.level = 0.95,
   n_sim = 10000,
-  n_core = 6
+  n_core = 6,
+  glm_model = "negativebinomial"
 )
 }
 \arguments{
@@ -47,6 +49,9 @@ getSampleSize_count_ovdisp(
 \item{n_sim}{number of simulations}
 
 \item{n_core}{number of cores used for parallel computation}
+
+\item{glm_model}{specify which glm model used in simulation.
+It can be c("negativebinomial", "quasipoisson").}
 
 \item{power}{power}
 }
