@@ -13,6 +13,8 @@ Authors@R: c(
     role = "cph"))
 Description: Easy and straight implementation of sample size calculation with R.
     This package covers variable types including binary, continuous, count, etc.
+    This package also provide basic working functions for CSF related simulation
+    since it is also sample size relevent topic.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -22,5 +24,6 @@ Imports:
 	dplyr,
 	lubridate,
 	parallel,
-	MASS
-RoxygenNote: 7.3.2
+	MASS,
+	rjags
+RoxygenNote: 7.3.3

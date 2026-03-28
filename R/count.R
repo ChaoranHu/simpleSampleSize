@@ -53,49 +53,45 @@ getPower_count_ovdisp <- function(total_sample_size, ss_ratio = 1,
     sample_size_AC <- total_sample_size*(ss_ratio/(ss_ratio+1))
     sample_size_PLB <- total_sample_size - sample_size_AC
     
-    ## result <- numeric(n_sim)
-    ## for (i in seq_len(n_sim)) {
-    ##     dat_1 <- rqpois(sample_size_AC, rate_AC, over_disp_rate + 1)
-    ##     dat_2 <- rqpois(sample_size_PLB, rate_PLB, over_disp_rate + 1)
 
-    ##     dat <- rbind(cbind(dat_1, "AC"),
-    ##                  cbind(dat_2, "PLB"))
-    ##     dat <- as.data.frame(dat)
-    ##     colnames(dat) <- c("event", "arm")
-    ##     dat$event <- as.numeric(dat$event)
+    result <- parallel::mclapply(1:n_sim,
+                                 function(x) {
+                                     tryCatch({
+                                         dat_1 <- rqpois(sample_size_AC, rate_AC, over_disp_rate + 1)
+                                         dat_2 <- rqpois(sample_size_PLB, rate_PLB, over_disp_rate + 1)
+                                         dat <- rbind(cbind(dat_1, "AC"),
+                                                      cbind(dat_2, "PLB"))
+                                         dat <- as.data.frame(dat)
+                                         colnames(dat) <- c("event", "arm")
+                                         dat$event <- as.numeric(dat$event)
+                                         
+                                         if (glm_model == "quasipoisson") {
+                                             cart <- glm(event ~ arm, dat, family = quasipoisson)
+                                         }
+                                         if (glm_model == "negativebinomial") {
+                                             cart <- MASS::glm.nb(event ~ arm, data = dat)
+                                         }
+                                         coef(summary(cart))[2, 4]
+                                     },
+                                     error = function(e) {
+                                         # message("Sim ", x, " error: ", conditionMessage(e))
+                                         NA_real_
+                                     })
+                                 },
+                                 mc.cores = n_core
+                                 )
 
-    ##     cart <- glm(event ~ arm, dat, family = quasipoisson)
-    ##                                     # cart <- glm(event ~ arm, dat, family = poisson)
+    result <- unlist(result)
 
-    ##     result[i] <- coef(summary(cart))[2, 4]
-    ## }
+                                        # check how many failed
+    # n_failed <- sum(is.na(result))
+    # if (n_failed > 0) message(n_failed, " of ", n_sim, " simulations failed, power will be calculated with success fit only. The impact should be minimal.")
 
-    result <- unlist(parallel::mclapply(1:n_sim,
-                                        function(x) {
-                                            dat_1 <- rqpois(sample_size_AC, rate_AC, over_disp_rate + 1)
-                                            dat_2 <- rqpois(sample_size_PLB, rate_PLB, over_disp_rate + 1)
-
-                                            dat <- rbind(cbind(dat_1, "AC"),
-                                                         cbind(dat_2, "PLB"))
-                                            dat <- as.data.frame(dat)
-                                            colnames(dat) <- c("event", "arm")
-                                            dat$event <- as.numeric(dat$event)
-
-                                            if (glm_model == "quasipoisson") {
-                                                cart <- glm(event ~ arm, dat, family = quasipoisson)
-                                            }
-
-                                            if (glm_model == "negativebinomial") {
-                                                cart <- MASS::glm.nb(event ~ arm, data = dat)
-                                            }
-                                            coef(summary(cart))[2, 4]
-                                        },
-                                        mc.cores = n_core))
-
+                                        # downstream analysis on successful runs only
+    result_clean <- result[!is.na(result)]
     
-    sum(result <= (1 - conf.level)) / n_sim
+    sum(result_clean <= (1 - conf.level)) / length(result_clean)
 }
-
 
 
 ##' @rdname getPower_count_ovdisp
@@ -107,9 +103,9 @@ getSampleSize_count_ovdisp <- function(power, ss_ratio = 1,
                                        glm_model = "negativebinomial"){
 
     check <- getPower_count_ovdisp(5000, ss_ratio,
-                              rate_AC, rate_PLB,
-                              over_disp_rate, drop_rate,
-                              conf.level, n_sim, n_core, glm_model) < power
+                                   rate_AC, rate_PLB,
+                                   over_disp_rate, drop_rate,
+                                   conf.level, n_sim, n_core, glm_model) < power
     if (check) {
         message("total sample size > 5000; return 9999 instead")
         return(9999)
@@ -121,5 +117,7 @@ getSampleSize_count_ovdisp <- function(power, ss_ratio = 1,
                               over_disp_rate, drop_rate,
                               conf.level, n_sim, n_core, glm_model) - power
     }
-    round(uniroot(f, c(10, 5000))$root)
+    round(uniroot(f, c(50, 5000))$root)
 }
+
+
